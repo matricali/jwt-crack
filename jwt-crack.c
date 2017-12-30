@@ -2,6 +2,7 @@
 #include <stdio.h>
 #include <unistd.h>
 #include <string.h>
+#include "base64.h"
 
 #define JWT_CRACK_VERSION "0.1.0"
 
@@ -73,5 +74,9 @@ int main(int argc, char **argv)
     }
 
     printf("\nTOKEN DATA:\nheader=%s\npayload=%s\nsignature=%s\n", jwt_header, jwt_payload, jwt_signature);
+
+    size_t out_len = 0;
+    char *jwt_header_decoded = (char *) base64_decode((const unsigned char *) jwt_header, strlen(jwt_header), &out_len);
+    printf("\nDECODED DATA:\nheader=%s\npayload=%s\nsignature=%s\n", jwt_header_decoded, jwt_header_decoded, jwt_header_decoded);
 
 }

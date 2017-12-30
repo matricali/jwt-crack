@@ -4,7 +4,7 @@ CFLAGS	+= -Wall -g -std=gnu99 -O3
 LDFLAGS	+=
 
 NAME	= jwt-crack
-SRCS	= jwt-crack.c
+SRCS	= jwt-crack.c base64.c
 OBJS	= $(SRCS:.c=.o)
 
 all: $(NAME)
