@@ -19,6 +19,10 @@ int main(int argc, char **argv)
     int opt;
     char *input_token = NULL;
 
+    char *jwt_header = NULL;
+    char *jwt_payload = NULL;
+    char *jwt_signature = NULL;
+
     printf("\tjwt-crack v%s\n", JWT_CRACK_VERSION);
 
     while ((opt = getopt(argc, argv, "a:l:h")) != -1) {
@@ -58,4 +62,16 @@ int main(int argc, char **argv)
     }
 
     printf("alphabet=%s\nlength=%d\ntoken=%s\n", g_alphabet, g_max_length, input_token);
+
+    jwt_header = strtok(input_token, ".");
+    jwt_payload = strtok(NULL, ".");
+    jwt_signature = strtok(NULL, ".");
+
+    if (jwt_signature == NULL) {
+        fprintf(stderr, "Invalid token signature.\n");
+        exit(EXIT_FAILURE);
+    }
+
+    printf("\nTOKEN DATA:\nheader=%s\npayload=%s\nsignature=%s\n", jwt_header, jwt_payload, jwt_signature);
+
 }
