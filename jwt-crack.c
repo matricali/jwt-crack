@@ -6,10 +6,13 @@
 #include <openssl/evp.h>
 #include "base64.h"
 
-#define JWT_CRACK_VERSION "0.1.0"
+#define JWT_CRACK_VERSION "0.2.0"
 
-unsigned char* generate_signature(const char *b64_header, const char *b64_payload,
-    const char *secret, unsigned int *out_len);
+unsigned char* generate_signature(const char *b64_header,
+    const char *b64_payload, const char *secret, unsigned int *out_len);
+
+int verify(const char *b64_header, const char *b64_payload,
+    const unsigned char *signature, const char *secret);
 
 
 char *g_alphabet = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
@@ -33,7 +36,6 @@ int main(int argc, char **argv)
     unsigned char *jwt_signature_decoded = NULL;
     size_t len = 0;
     size_t rlen = 0;
-    unsigned int out_len = 0;
 
     printf("\tjwt-crack v%s - (c) 2017 Jorge Matricali\n", JWT_CRACK_VERSION);
 
@@ -98,32 +100,27 @@ int main(int argc, char **argv)
         }
         strcpy(tmp, jwt_signature);
         tmp[len] = '=';
-        tmp[len + 1] = '\0';
+        len++;
+        tmp[len] = '\0';
         jwt_signature = tmp;
-        free(tmp);
     }
 
     jwt_signature_decoded = base64_decode((const unsigned char *) jwt_signature, len, &rlen);
 
     char *secret = "abc123";
-    unsigned char *signature = NULL;
 
-    signature = generate_signature(jwt_header, jwt_payload, secret, &out_len);
-
-    if (signature && (memcmp(signature, jwt_signature_decoded, rlen) == 0)) {
+    if (verify(jwt_header, jwt_payload, jwt_signature_decoded, secret) == 0) {
         printf("The secret is: %s\n", secret);
     } else {
         printf("Invalid secret.\n");
     }
 
-    free(signature);
     free(jwt_signature_decoded);
-
     return 0;
 }
 
-unsigned char* generate_signature(const char *b64_header, const char *b64_payload,
-    const char *secret, unsigned int *out_len)
+unsigned char* generate_signature(const char *b64_header,
+    const char *b64_payload, const char *secret, unsigned int *out_len)
 {
     size_t data_len = 0;
     unsigned char *data;
@@ -145,4 +142,25 @@ unsigned char* generate_signature(const char *b64_header, const char *b64_payloa
 
     free(data);
     return digest;
+}
+
+int verify(const char *b64_header, const char *b64_payload,
+    const unsigned char *o_signature, const char *secret)
+{
+    unsigned int out_len = 0;
+    unsigned char *signature = NULL;
+
+    signature = generate_signature(b64_header, b64_payload, secret, &out_len);
+
+    if (!signature) {
+        return -1;
+    }
+
+    if (memcmp(signature, o_signature, strlen((char *)o_signature)) == 0) {
+        free(signature);
+        return 0;
+    }
+
+    free(signature);
+    return -1;
 }
