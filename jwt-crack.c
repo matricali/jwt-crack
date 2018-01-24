@@ -14,6 +14,8 @@ unsigned char* generate_signature(const char *b64_header,
 int verify(const char *b64_header, const char *b64_payload,
     const unsigned char *signature, const char *secret);
 
+void permutation(const char *chars, size_t max_len, const char *cur);
+
 
 char *g_alphabet = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
 int g_max_length = 6;
@@ -116,6 +118,9 @@ int main(int argc, char **argv)
     }
 
     free(jwt_signature_decoded);
+
+    permutation(g_alphabet, 6, "");
+
     return 0;
 }
 
@@ -163,4 +168,22 @@ int verify(const char *b64_header, const char *b64_payload,
 
     free(signature);
     return -1;
+}
+
+void permutation(const char *chars, size_t max_len, const char *cur)
+{
+    size_t len = 0;
+
+    if (strlen(cur) >= max_len) {
+        return;
+    }
+
+    len = strlen(chars);
+
+    for (int i = 0; i < len; ++i) {
+        char next[max_len];
+        sprintf(next, "%s%c", cur, g_alphabet[i]);
+        printf(">> %s\n", next);
+        permutation(chars, max_len, next);
+    }
 }
