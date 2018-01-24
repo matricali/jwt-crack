@@ -2,8 +2,15 @@
 #include <stdio.h>
 #include <unistd.h>
 #include <string.h>
+#include <openssl/hmac.h>
+#include <openssl/evp.h>
+#include "base64.h"
 
 #define JWT_CRACK_VERSION "0.1.0"
+
+unsigned char* generate_signature(const char *b64_header, const char *b64_payload,
+    const char *secret, unsigned int *out_len);
+
 
 char *g_alphabet = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
 int g_max_length = 6;
@@ -19,7 +26,21 @@ int main(int argc, char **argv)
     int opt;
     char *input_token = NULL;
 
-    printf("\tjwt-crack v%s\n", JWT_CRACK_VERSION);
+    char *jwt_header = NULL;
+    char *jwt_payload = NULL;
+    char *jwt_signature = NULL;
+
+    unsigned char *jwt_signature_decoded = NULL;
+    size_t len = 0;
+    size_t rlen = 0;
+    unsigned int out_len = 0;
+
+    printf("\tjwt-crack v%s - (c) 2017 Jorge Matricali\n", JWT_CRACK_VERSION);
+
+    if (argc < 2) {
+        usage(argv[0]);
+        exit(EXIT_FAILURE);
+    }
 
     while ((opt = getopt(argc, argv, "a:l:h")) != -1) {
         switch (opt) {
@@ -57,5 +78,71 @@ int main(int argc, char **argv)
         exit(EXIT_FAILURE);
     }
 
-    printf("alphabet=%s\nlength=%d\ntoken=%s\n", g_alphabet, g_max_length, input_token);
+    jwt_header = strtok(input_token, ".");
+    jwt_payload = strtok(NULL, ".");
+    jwt_signature = strtok(NULL, ".");
+
+    if (jwt_signature == NULL) {
+        fprintf(stderr, "Invalid token signature.\n");
+        exit(EXIT_FAILURE);
+    }
+
+
+    len = strlen(jwt_signature);
+    /* Si la cadena base64 no termina con = no nos sirve */
+    if (strcmp(jwt_signature + len - 1, "=") != 0) {
+        char *tmp = malloc(sizeof(char) * (len + 2));
+        if (tmp == NULL) {
+            fprintf(stderr, "Insuficient memory!\n");
+            exit(EXIT_FAILURE);
+        }
+        strcpy(tmp, jwt_signature);
+        tmp[len] = '=';
+        tmp[len + 1] = '\0';
+        jwt_signature = tmp;
+        free(tmp);
+    }
+
+    jwt_signature_decoded = base64_decode((const unsigned char *) jwt_signature, len, &rlen);
+
+    char *secret = "abc123";
+    unsigned char *signature = NULL;
+
+    signature = generate_signature(jwt_header, jwt_payload, secret, &out_len);
+
+    if (signature && (memcmp(signature, jwt_signature_decoded, rlen) == 0)) {
+        printf("The secret is: %s\n", secret);
+    } else {
+        printf("Invalid secret.\n");
+    }
+
+    free(signature);
+    free(jwt_signature_decoded);
+
+    return 0;
+}
+
+unsigned char* generate_signature(const char *b64_header, const char *b64_payload,
+    const char *secret, unsigned int *out_len)
+{
+    size_t data_len = 0;
+    unsigned char *data;
+    unsigned char* digest;
+
+    data_len = strlen(b64_header) + 1 + strlen(b64_payload);
+    data = (unsigned char *) malloc(data_len + 1);
+    sprintf((char *) data, "%s.%s", b64_header, b64_payload);
+
+    EVP_MD *evp_md = (EVP_MD *) EVP_sha256();
+    digest = malloc(EVP_MAX_MD_SIZE);
+
+    HMAC(
+		evp_md,
+		secret, strlen(secret),
+		(unsigned char *) data, data_len,
+		digest, out_len
+	);
+
+    free(data);
+    return digest;
 }
