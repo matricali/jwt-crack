@@ -109,13 +109,17 @@ unsigned char * base64_decode(const unsigned char *src, size_t len,
 			count++;
 	}
 
-	if (count == 0 || count % 4)
+	if (count == 0 || count % 4) {
+		fprintf(stderr, "L113\n");
 		return NULL;
+	}
 
 	olen = count / 4 * 3;
 	pos = out = malloc(olen);
-	if (out == NULL)
+	if (out == NULL) {
+		fprintf(stderr, "L120\n");
 		return NULL;
+	}
 
 	count = 0;
 	for (i = 0; i < len; i++) {
@@ -139,6 +143,7 @@ unsigned char * base64_decode(const unsigned char *src, size_t len,
 					pos -= 2;
 				else {
 					/* Invalid padding */
+					fprintf(stderr, "INVALID PADDING\n");
 					free(out);
 					return NULL;
 				}

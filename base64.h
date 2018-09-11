@@ -1,4 +1,5 @@
 #include <stdlib.h>
+#include <stdio.h>
 #include <string.h>
 /*
  * Base64 encoding/decoding (RFC1341)

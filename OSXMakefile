@@ -1,7 +1,7 @@
 CC	= gcc
 
-OPENSSL = /usr/include/openssl
-OPENSSL_LIB = -lssl
+OPENSSL = /usr/local/opt/openssl/include
+OPENSSL_LIB = -lssl -L/usr/local/opt/openssl/lib
 
 CFLAGS	+= -I $(OPENSSL) -Wall -g -std=gnu99 -O3
 LDFLAGS	+= $(OPENSSL_LIB) -lcrypto
